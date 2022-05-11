@@ -32,19 +32,26 @@ export const caseTransfer = (o: any, type: 'Camel' | 'Snake'): any => {
   return o;
 };
 
-const $axios = axios.create({baseURL: '/api/'});
+const $axios = axios.create({baseURL: 'https://invest-api.admire.social/'});
 
 $axios.interceptors.response.use((response) => {
   if (['', 'json'].includes(response.request.responseType)) response.data = caseTransfer(response.data, 'Camel');
   return response;
 }, (error) => {
   if (error.response.status === 401 && !['/auth', '/sign-up'].includes(Router.currentRoute.value.path) && !error.config.url.endsWith('user/refresh')) {
+    localStorage.removeItem('Authorization');
     Router.push('/auth');
   }
   return Promise.reject(error);
 });
 
 $axios.interceptors.request.use((request) => {
+  if (localStorage.Authorization) {
+    request.headers = {
+      ...(request.headers || {}),
+      Authorization: `JWT ${localStorage.Authorization}`,
+    };
+  }
   if (!(request.data instanceof FormData)) request.data = caseTransfer(request.data, 'Snake');
   return request;
 });
